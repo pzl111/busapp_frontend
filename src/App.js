@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const REACT_APP_BACKEND_URL = "https://busapp-backend.vercel.app";
   const [busStopCode, setBusStopCode] = useState('');
   const [busStops, setBusStops] = useState(() => {
     // Load bus stops from localStorage on initial render
@@ -45,7 +44,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `${REACT_APP_BACKEND_URL}/api/bus-arrival?busStopCode=${busStopCode}&apiKey=${encodeURIComponent(apiKey)}`
+        `${process.env.REACT_APP_BACKEND_URL}/api/bus-arrival?busStopCode=${busStopCode}&apiKey=${encodeURIComponent(apiKey)}`
       );
 
       if (!response.ok) {
@@ -122,7 +121,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `${REACT_APP_BACKEND_URL}/api/bus-arrival?busStopCode=${stopCode}&apiKey=${encodeURIComponent(apiKey)}`
+        `${process.env.REACT_APP_BACKEND_URL}/api/bus-arrival?busStopCode=${stopCode}&apiKey=${encodeURIComponent(apiKey)}`
       );
 
       if (!response.ok) {
