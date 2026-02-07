@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const REACT_APP_BACKEND_URL = "https://busapp-backend.vercel.app/";
+  const REACT_APP_BACKEND_URL = "https://busapp-backend.vercel.app";
   const [busStopCode, setBusStopCode] = useState('');
   const [busStops, setBusStops] = useState(() => {
     // Load bus stops from localStorage on initial render
