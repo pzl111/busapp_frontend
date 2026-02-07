@@ -22,6 +22,18 @@ function App() {
   const [error, setError] = useState(null);
   const [apiKey, setApiKey] = useState(process.env.REACT_APP_API_KEY || '');
   const [editMode, setEditMode] = useState(false);
+  const [favoriteBuses, setFavoriteBuses] = useState(() => {
+    // Load favorite buses from localStorage on initial render
+    try {
+      const savedFavorites = localStorage.getItem('favoriteBuses');
+      if (savedFavorites) {
+        return JSON.parse(savedFavorites);
+      }
+    } catch (error) {
+      console.error('Error loading favorite buses from localStorage:', error);
+    }
+    return [];
+  });
 
   const fetchBusArrival = async () => {
     if (!apiKey) {
@@ -66,18 +78,27 @@ function App() {
     }
   };
 
-  const saveBusStop = () => {
-    if (!searchResult) return;
+  const toggleSaveBusStop = () => {
+    const busStop = searchResult || selectedBusStop;
+    if (!busStop) return;
     
     // Check if bus stop already exists
-    const existingIndex = busStops.findIndex(stop => stop.code === searchResult.code);
+    const existingIndex = busStops.findIndex(stop => stop.code === busStop.code);
     if (existingIndex !== -1) {
-      setError('Bus stop already saved');
-      return;
+      // Remove from saved stops
+      setBusStops(prev => prev.filter(stop => stop.code !== busStop.code));
+      // If we're viewing a saved bus stop and we just removed it, close the overlay
+      if (selectedBusStop && existingIndex !== -1) {
+        closeBusStopDetails();
+      }
+    } else {
+      // Add to saved stops
+      setBusStops(prev => [...prev, busStop]);
     }
-    
-    setBusStops(prev => [...prev, searchResult]);
-    closeOverlay();
+  };
+
+  const isBusStopSaved = (busStopCode) => {
+    return busStops.some(stop => stop.code === busStopCode);
   };
 
   const closeOverlay = () => {
@@ -97,6 +118,49 @@ function App() {
 
   const removeBusStop = (code) => {
     setBusStops(prev => prev.filter(stop => stop.code !== code));
+  };
+
+  const toggleFavoriteBus = (busStopCode, serviceNo, busStopName, serviceData = null) => {
+    setFavoriteBuses(prev => {
+      const existingIndex = prev.findIndex(
+        fav => fav.busStopCode === busStopCode && fav.serviceNo === serviceNo
+      );
+      
+      if (existingIndex !== -1) {
+        // Remove from favorites
+        return prev.filter((_, index) => index !== existingIndex);
+      } else {
+        // Add to favorites
+        return [...prev, {
+          busStopCode,
+          serviceNo,
+          busStopName,
+          customName: null,
+          data: serviceData,
+          timestamp: new Date()
+        }];
+      }
+    });
+  };
+
+  const isBusFavorited = (busStopCode, serviceNo) => {
+    return favoriteBuses.some(
+      fav => fav.busStopCode === busStopCode && fav.serviceNo === serviceNo
+    );
+  };
+
+  const removeFavoriteBus = (busStopCode, serviceNo) => {
+    setFavoriteBuses(prev => prev.filter(
+      fav => !(fav.busStopCode === busStopCode && fav.serviceNo === serviceNo)
+    ));
+  };
+
+  const updateFavoriteBusName = (busStopCode, serviceNo, newName) => {
+    setFavoriteBuses(prev => prev.map(fav => 
+      fav.busStopCode === busStopCode && fav.serviceNo === serviceNo
+        ? { ...fav, customName: newName }
+        : fav
+    ));
   };
 
   const updateBusStopName = (code, newName) => {
@@ -148,23 +212,52 @@ function App() {
           ? { ...stop, data: data, timestamp: new Date() }
           : stop
       ));
+
+      // Update favorite buses from this stop
+      setFavoriteBuses(prev => prev.map(fav => {
+        if (fav.busStopCode === stopCode) {
+          const service = data.Services?.find(s => s.ServiceNo === fav.serviceNo);
+          return {
+            ...fav,
+            data: service || null,
+            busStopName: data.BusStopName || fav.busStopName,
+            timestamp: new Date()
+          };
+        }
+        return fav;
+      }));
+
+      // Update selected bus stop if viewing
+      if (selectedBusStop?.code === stopCode) {
+        setSelectedBusStop(prev => ({
+          ...prev,
+          data: data,
+          timestamp: new Date()
+        }));
+      }
     } catch (err) {
       console.error(`Error refreshing bus stop ${stopCode}:`, err);
     }
   };
 
   const refreshAllBusStops = async () => {
-    if (busStops.length === 0) return;
+    // Get unique bus stop codes from both saved stops and favorite buses
+    const busStopCodes = new Set([
+      ...busStops.map(stop => stop.code),
+      ...favoriteBuses.map(fav => fav.busStopCode)
+    ]);
+    
+    if (busStopCodes.size === 0) return;
     
     // Refresh all bus stops in parallel
     await Promise.all(
-      busStops.map(stop => refreshBusStop(stop.code))
+      Array.from(busStopCodes).map(code => refreshBusStop(code))
     );
   };
 
   useEffect(() => {
     // Refresh all bus stops on initial page load/refresh
-    if (busStops.length > 0 && apiKey) {
+    if ((busStops.length > 0 || favoriteBuses.length > 0) && apiKey) {
       refreshAllBusStops();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -172,14 +265,14 @@ function App() {
 
   useEffect(() => {
     // Set up interval to refresh all bus stops every 25 seconds
-    if (busStops.length === 0) return;
+    if (busStops.length === 0 && favoriteBuses.length === 0) return;
 
     const intervalId = setInterval(() => {
       refreshAllBusStops();
     }, 25000);
 
     return () => clearInterval(intervalId);
-  }, [busStops.length, apiKey]);
+  }, [busStops.length, favoriteBuses.length, apiKey]);
 
   // Save bus stops to localStorage whenever they change
   useEffect(() => {
@@ -189,6 +282,15 @@ function App() {
       console.error('Error saving bus stops to localStorage:', error);
     }
   }, [busStops]);
+
+  // Save favorite buses to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('favoriteBuses', JSON.stringify(favoriteBuses));
+    } catch (error) {
+      console.error('Error saving favorite buses to localStorage:', error);
+    }
+  }, [favoriteBuses]);
 
   const formatTime = (timeString) => {
     if (!timeString) return null;
@@ -247,15 +349,21 @@ function App() {
             <button className="back-button" onClick={closeBusStopDetails}>
               ← Back
             </button>
-          </div>
-          
-          <div className="overlay-content">
             <div className="overlay-bus-stop-info">
               <span className="busstop-name">
                 {selectedBusStop.customName || selectedBusStop.originalName || selectedBusStop.data.BusStopName || 'Bus Stop'}
               </span>
               <span className="bus-stop-code">{selectedBusStop.code}</span>
             </div>
+            <button 
+              className={`save-stop-button ${isBusStopSaved(selectedBusStop.code) ? 'saved' : ''}`}
+              onClick={toggleSaveBusStop}
+            >
+              {isBusStopSaved(selectedBusStop.code) ? '★' : '☆'}
+            </button>
+          </div>
+          
+          <div className="overlay-content">
             
             {selectedBusStop.data.Services && selectedBusStop.data.Services.length > 0 ? (
               <div className="bus-list">
@@ -353,6 +461,18 @@ function App() {
                         </div>
                       </div>
                     </div>
+                    
+                    <button 
+                      className={`favorite-bus-button ${isBusFavorited(selectedBusStop.code, service.ServiceNo) ? 'favorited' : ''}`}
+                      onClick={() => toggleFavoriteBus(
+                        selectedBusStop.code, 
+                        service.ServiceNo,
+                        selectedBusStop.customName || selectedBusStop.originalName || selectedBusStop.data.BusStopName,
+                        service
+                      )}
+                    >
+                      {isBusFavorited(selectedBusStop.code, service.ServiceNo) ? '★' : '☆'}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -369,20 +489,22 @@ function App() {
             <button className="back-button" onClick={closeOverlay}>
               ← Back
             </button>
-            <button className="star-button" onClick={saveBusStop}>
-              ⭐ Save
-            </button>
-          </div>
-          
-          <div className="overlay-content">
-            {error && <div className="error">{error}</div>}
-            
             <div className="overlay-bus-stop-info">
               <span className="busstop-name">
                 {searchResult.data.BusStopName || 'Bus Stop'}
               </span>
               <span className="bus-stop-code">{searchResult.code}</span>
             </div>
+            <button 
+              className={`save-stop-button ${isBusStopSaved(searchResult.code) ? 'saved' : ''}`}
+              onClick={toggleSaveBusStop}
+            >
+              {isBusStopSaved(searchResult.code) ? '★' : '☆'}
+            </button>
+          </div>
+          
+          <div className="overlay-content">
+            {error && <div className="error">{error}</div>}
             
             {searchResult.data.Services && searchResult.data.Services.length > 0 ? (
               <div className="bus-list">
@@ -480,6 +602,18 @@ function App() {
                         </div>
                       </div>
                     </div>
+                    
+                    <button 
+                      className={`favorite-bus-button ${isBusFavorited(searchResult.code, service.ServiceNo) ? 'favorited' : ''}`}
+                      onClick={() => toggleFavoriteBus(
+                        searchResult.code, 
+                        service.ServiceNo,
+                        searchResult.data.BusStopName,
+                        service
+                      )}
+                    >
+                      {isBusFavorited(searchResult.code, service.ServiceNo) ? '★' : '☆'}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -498,13 +632,141 @@ function App() {
             value={busStopCode}
             onChange={(e) => setBusStopCode(e.target.value)}
             placeholder="Enter bus stop code"
+            onKeyPress={(e) => e.key === 'Enter' && fetchBusArrival()}
           />
-          <button onClick={fetchBusArrival} disabled={loading || !apiKey}>
-            {loading ? 'Loading...' : 'Get Bus Arrival'}
+          <button className="search-icon-button" onClick={fetchBusArrival} disabled={loading || !apiKey}>
+            {loading ? '⏳' : '🔍'}
           </button>
         </div>
 
         {!showOverlay && error && <div className="error">{error}</div>}
+
+        {favoriteBuses.length > 0 && (
+          <div className="favorite-buses-section">
+            <h2 className="saved-stops-title">Favorite Buses</h2>
+            <div className="bus-list">
+              {favoriteBuses.map((favorite, index) => (
+                <div key={`${favorite.busStopCode}-${favorite.serviceNo}`} className="bus-card favorite-bus-card">
+                  <div className="bus-left">
+                    <div className="bus-number">{favorite.serviceNo}</div>
+                    {editMode ? (
+                      <input
+                        type="text"
+                        className="bus-destination-input"
+                        value={favorite.customName !== null && favorite.customName !== undefined 
+                          ? favorite.customName 
+                          : favorite.busStopName || favorite.busStopCode}
+                        onChange={(e) => updateFavoriteBusName(favorite.busStopCode, favorite.serviceNo, e.target.value)}
+                        placeholder="Bus stop name"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <div className="bus-destination">
+                        {favorite.customName || favorite.busStopName || favorite.busStopCode}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {favorite.data && (
+                    <div className="bus-right">
+                          <div className="timing-row">
+                            <div className="timing-item">
+                              <div className="timing-content">
+                                <div 
+                                  className="timing-value"
+                                  style={{color: getTimingColor(favorite.data.NextBus)}}
+                                >
+                                  {formatTime(favorite.data.NextBus?.EstimatedArrival) || '-'}
+                                </div>
+                                {favorite.data.NextBus?.EstimatedArrival && (
+                                  <img 
+                                    src={`/${getBusImage(favorite.data.NextBus)}.png`} 
+                                    alt="bus"
+                                    className="timing-bus-icon"
+                                  />
+                                )}
+                              </div>
+                              <div className="timing-bar">
+                                <div 
+                                  className="timing-bar-fill" 
+                                  style={{
+                                    width: `${getLoadPercentage(favorite.data.NextBus?.Load)}%`,
+                                    background: getLoadColor(favorite.data.NextBus?.Load)
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="timing-item">
+                              <div className="timing-content">
+                                <div 
+                                  className="timing-value"
+                                  style={{color: getTimingColor(favorite.data.NextBus2)}}
+                                >
+                                  {formatTime(favorite.data.NextBus2?.EstimatedArrival) || '-'}
+                                </div>
+                                {favorite.data.NextBus2?.EstimatedArrival && (
+                                  <img 
+                                    src={`/${getBusImage(favorite.data.NextBus2)}.png`} 
+                                    alt="bus"
+                                    className="timing-bus-icon"
+                                  />
+                                )}
+                              </div>
+                              <div className="timing-bar">
+                                <div 
+                                  className="timing-bar-fill" 
+                                  style={{
+                                    width: `${getLoadPercentage(favorite.data.NextBus2?.Load)}%`,
+                                    background: getLoadColor(favorite.data.NextBus2?.Load)
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="timing-item">
+                              <div className="timing-content">
+                                <div 
+                                  className="timing-value"
+                                  style={{color: getTimingColor(favorite.data.NextBus3)}}
+                                >
+                                  {formatTime(favorite.data.NextBus3?.EstimatedArrival) || '-'}
+                                </div>
+                                {favorite.data.NextBus3?.EstimatedArrival && (
+                                  <img 
+                                    src={`/${getBusImage(favorite.data.NextBus3)}.png`} 
+                                    alt="bus"
+                                    className="timing-bus-icon"
+                                  />
+                                )}
+                              </div>
+                              <div className="timing-bar">
+                                <div 
+                                  className="timing-bar-fill" 
+                                  style={{
+                                    width: `${getLoadPercentage(favorite.data.NextBus3?.Load)}%`,
+                                    background: getLoadColor(favorite.data.NextBus3?.Load)
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                  
+                  {editMode && (
+                    <button 
+                      className="remove-button"
+                      onClick={() => removeFavoriteBus(favorite.busStopCode, favorite.serviceNo)}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {busStops.length > 0 && (
           <div className="saved-stops">
@@ -556,7 +818,7 @@ function App() {
           </div>
         )}
 
-        {busStops.length > 0 && (
+        {(busStops.length > 0 || favoriteBuses.length > 0) && (
           <button 
             className="floating-edit-button"
             onClick={toggleEditMode}

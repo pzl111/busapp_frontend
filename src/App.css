@@ -73,28 +73,35 @@ body {
 }
 
 .search-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  position: relative;
 }
 
-.search-section button {
-  padding: 0.75rem 1.5rem;
-  background: #2a2a2a;
-  color: #fff;
+.search-section input {
+  padding-right: 3rem;
+}
+
+.search-icon-button {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 1.5rem;
   cursor: pointer;
-  transition: background 0.2s;
+  padding: 0.5rem;
+  color: #999;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.search-section button:hover:not(:disabled) {
-  background: #3a3a3a;
+.search-icon-button:hover:not(:disabled) {
+  color: #fff;
 }
 
-.search-section button:disabled {
+.search-icon-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -135,6 +142,7 @@ body {
   align-items: center;
   border-bottom: 1px solid #2a2a2a;
   z-index: 10;
+  gap: 1rem;
 }
 
 .back-button {
@@ -150,10 +158,34 @@ body {
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .back-button:hover {
   background: #3a3a3a;
+}
+
+.save-stop-button {
+  background: transparent;
+  border: none;
+  color: #999;
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.save-stop-button:hover {
+  color: #fbbf24;
+  transform: scale(1.1);
+}
+
+.save-stop-button.saved {
+  color: #fbbf24;
 }
 
 .overlay-content {
@@ -168,9 +200,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #2a2a2a;
+  flex: 1;
+  text-align: center;
+  align-items: center;
+  min-width: 0;
 }
 
 .search-results {
@@ -214,6 +247,20 @@ body {
   margin-top: 1.5rem;
 }
 
+.favorite-buses-section {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.favorite-bus-card {
+  position: relative;
+}
+
+.favorite-bus-edit-content {
+  flex: 1;
+  min-width: 0;
+}
+
 .saved-stops-title {
   font-size: 1.25rem;
   font-weight: 600;
@@ -232,12 +279,11 @@ body {
   background: #1a1a1a;
   border-radius: 12px;
   border: 1px solid #2a2a2a;
-  padding: 1rem;
+  padding: 0.8rem 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   transition: all 0.2s;
-  gap: 1rem
 }
 
 .bus-stop-item-compact:hover {
@@ -260,13 +306,14 @@ body {
 .bus-stop-title {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.1rem;
   flex: 1;
 }
 
 .bus-stop-code {
-  font-size: 0.9rem;
-  color: #a0a0a0;
+  font-size: 0.7rem;
+  color: #8c8c8c;
+  font-weight: 500;
 }
 
 .busstop-name {
@@ -289,6 +336,7 @@ body {
   font-size: 1rem;
   transition: all 0.2s;
   flex-shrink: 0;
+  margin-left: 1rem;
 }
 
 .remove-button:hover {
@@ -305,8 +353,9 @@ body {
 .bus-card {
   background: #1a1a1a;
   border-radius: 16px;
-  padding: 1rem;
+  padding: 0rem 1rem;
   display: flex;
+  height: 3.7rem;
   justify-content: space-between;
   align-items: center;
   border: 1px solid #2a2a2a;
@@ -318,24 +367,62 @@ body {
   background: #1f1f1f;
 }
 
+.favorite-bus-button {
+  background: transparent;
+  border: none;
+  color: #999;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+
+.favorite-bus-button:hover {
+  color: #fbbf24;
+  transform: scale(1.1);
+}
+
+.favorite-bus-button.favorited {
+  color: #fbbf24;
+}
+
 .bus-left {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
   flex-shrink: 0;
   width: 25%;
 }
 
 .bus-number {
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   color: #fff;
   line-height: 1;
 }
 
 .bus-destination {
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 0.65rem;
+  color: #8c8c8c;
   font-weight: 500;
+}
+
+.bus-destination-input {
+  font-size: 0.8rem;
+  color: #fff;
+  font-weight: 500;
+  background: #0a0a0a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  margin-right: 1rem;
+  margin-top: 0.2rem;
+}
+
+.bus-destination-input:focus {
+  outline: none;
+  border-color: #4a4a4a;
 }
 
 .bus-right {
@@ -379,7 +466,7 @@ body {
 }
 
 .timing-value {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   color: #fff;
   text-align: right;
   line-height: 1;
