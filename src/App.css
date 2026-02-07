@@ -340,7 +340,7 @@ body {
   font-size: 1rem;
   transition: all 0.2s;
   flex-shrink: 0;
-  margin-left: 1rem;
+  margin-left: 0.5rem;
 }
 
 .remove-button:hover {
@@ -434,10 +434,12 @@ body {
   line-height: 1;
   flex-shrink: 0;
   margin-right: 0.5rem;
+  min-width: fit-content;
 }
 
 .bus-destination-input-edit {
   flex: 1;
+  min-width: 0;
   font-size: 1rem;
   color: #fff;
   font-weight: 500;
@@ -612,6 +614,7 @@ body {
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
+  min-width: 0;
 }
 
 .edit-name-input:focus {
@@ -646,6 +649,7 @@ body {
   flex-direction: row;
   gap: 0.25rem;
   margin-right: 0.5rem;
+  flex-shrink: 0;
 }
 
 .reorder-button {
