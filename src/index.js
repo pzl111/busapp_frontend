@@ -22,3 +22,14 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+
+// Handle Android back button in WebView
+window.addEventListener('message', function(event) {
+  if (event.data === 'android-back-button') {
+    // Trigger your back button logic
+    const btn = document.querySelector('.back-button');
+    if (btn) {
+      btn.click();
+    }
+  }
+});
