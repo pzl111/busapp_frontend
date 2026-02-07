@@ -140,11 +140,11 @@ body {
   position: sticky;
   top: 0;
   background: #000;
-  padding: 0.5rem 1rem;
+  padding: 0.7rem 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #2a2a2a;
+  /* border-bottom: 1px solid #2a2a2a; */
   z-index: 10;
   gap: 1rem;
 }
@@ -195,7 +195,7 @@ body {
 
 .overlay-content {
   flex: 1;
-  padding: 1rem;
+  padding: 0 1rem;
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
@@ -281,9 +281,9 @@ body {
 }
 
 .bus-stop-item-compact {
-  background: #1a1a1a;
+  background: #101010;
   border-radius: 12px;
-  border: 1px solid #2a2a2a;
+  /* border: 1px solid #2a2a2a; */
   padding: 0.8rem 1rem;
   display: flex;
   justify-content: space-between;
@@ -357,13 +357,13 @@ body {
 }
 
 .bus-card {
-  background: #1a1a1a;
+  background: #101010;
   border-radius: 16px;
   padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #2a2a2a;
+  /* border: 1px solid #2a2a2a; */
   transition: background 0.2s;
   flex-wrap: nowrap;
 }
@@ -522,7 +522,7 @@ body {
 
 .timing-bus-icon {
   width: 14px;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .bus-icons {
@@ -566,8 +566,8 @@ body {
 
 .floating-edit-button {
   position: fixed;
-  bottom: 2rem;
-  right: 2rem;
+  bottom: 1.5rem;
+  right: 1.5rem;
   width: 56px;
   height: 56px;
   background: #2a2a2a;
