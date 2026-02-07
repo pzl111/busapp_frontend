@@ -3,6 +3,9 @@ import './App.css';
 
 function App() {
   const [busStopCode, setBusStopCode] = useState('');
+  const [searchResult, setSearchResult] = useState(null);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [selectedBusStop, setSelectedBusStop] = useState(null);
   const [busStops, setBusStops] = useState(() => {
     // Load bus stops from localStorage on initial render
     try {
@@ -18,7 +21,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [apiKey, setApiKey] = useState(process.env.REACT_APP_API_KEY || '');
-  const [expandedStops, setExpandedStops] = useState({});
   const [editMode, setEditMode] = useState(false);
 
   const fetchBusArrival = async () => {
@@ -29,13 +31,6 @@ function App() {
 
     if (!busStopCode) {
       setError('Please enter a bus stop code');
-      return;
-    }
-
-    // Check if bus stop already exists
-    const existingIndex = busStops.findIndex(stop => stop.code === busStopCode);
-    if (existingIndex !== -1) {
-      setError('Bus stop already added');
       return;
     }
 
@@ -54,38 +49,54 @@ function App() {
 
       const data = await response.json();
       
-      // Add new bus stop to the list
-      const newBusStop = {
+      // Set search result
+      setSearchResult({
         code: busStopCode,
         data: data,
         customName: null,
         originalName: data.BusStopName,
         timestamp: new Date()
-      };
-      
-      setBusStops(prev => [...prev, newBusStop]);
-      setExpandedStops(prev => ({...prev, [busStopCode]: true}));
+      });
+      setShowOverlay(true);
     } catch (err) {
       setError(err.message);
+      setSearchResult(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleAccordion = (code) => {
-    setExpandedStops(prev => ({
-      ...prev,
-      [code]: !prev[code]
-    }));
+  const saveBusStop = () => {
+    if (!searchResult) return;
+    
+    // Check if bus stop already exists
+    const existingIndex = busStops.findIndex(stop => stop.code === searchResult.code);
+    if (existingIndex !== -1) {
+      setError('Bus stop already saved');
+      return;
+    }
+    
+    setBusStops(prev => [...prev, searchResult]);
+    closeOverlay();
+  };
+
+  const closeOverlay = () => {
+    setShowOverlay(false);
+    setSearchResult(null);
+    setBusStopCode('');
+    setError(null);
+  };
+
+  const openBusStopDetails = (busStop) => {
+    setSelectedBusStop(busStop);
+  };
+
+  const closeBusStopDetails = () => {
+    setSelectedBusStop(null);
   };
 
   const removeBusStop = (code) => {
     setBusStops(prev => prev.filter(stop => stop.code !== code));
-    setExpandedStops(prev => {
-      const newState = {...prev};
-      delete newState[code];
-      return newState;
-    });
   };
 
   const updateBusStopName = (code, newName) => {
@@ -208,20 +219,6 @@ function App() {
     }
   };
 
-  const hasAllBuses = (service) => {
-    return service.NextBus?.EstimatedArrival && 
-           service.NextBus2?.EstimatedArrival && 
-           service.NextBus3?.EstimatedArrival;
-  };
-
-  const getBusType = (service) => {
-    // Check if any of the buses are double decker
-    const isDoubleDecker = service.NextBus?.Type === 'DD' || 
-                          service.NextBus2?.Type === 'DD' || 
-                          service.NextBus3?.Type === 'DD';
-    return isDoubleDecker ? 'double-decker' : 'single-decker';
-  };
-
   const getBusImage = (bus) => {
     if (!bus || !bus.Type) return 'single-decker';
     return bus.Type === 'DD' ? 'double-decker' : 'single-decker';
@@ -242,20 +239,258 @@ function App() {
     return bus.Monitored === 1 || bus.Monitored === '1' ? '#fff' : '#ff4444';
   };
 
-  const getLoadLevel = (load) => {
-    switch (load) {
-      case 'SEA': return 'Seats Available';
-      case 'SDA': return 'Standing Available';
-      case 'LSD': return 'Limited Standing';
-      default: return 'N/A';
-    }
-  };
-
   return (
     <div className="App">
+      {selectedBusStop && (
+        <div className="search-overlay">
+          <div className="overlay-header">
+            <button className="back-button" onClick={closeBusStopDetails}>
+              ← Back
+            </button>
+          </div>
+          
+          <div className="overlay-content">
+            <div className="overlay-bus-stop-info">
+              <span className="busstop-name">
+                {selectedBusStop.customName || selectedBusStop.originalName || selectedBusStop.data.BusStopName || 'Bus Stop'}
+              </span>
+              <span className="bus-stop-code">{selectedBusStop.code}</span>
+            </div>
+            
+            {selectedBusStop.data.Services && selectedBusStop.data.Services.length > 0 ? (
+              <div className="bus-list">
+                {[...selectedBusStop.data.Services].sort((a, b) => {
+                  const numA = parseInt(a.ServiceNo);
+                  const numB = parseInt(b.ServiceNo);
+                  return numA - numB;
+                }).map((service, index) => (
+                  <div key={index} className="bus-card">
+                    <div className="bus-left">
+                      <div className="bus-number">{service.ServiceNo}</div>
+                    </div>
+                    
+                    <div className="bus-right">
+                      <div className="timing-row">
+                        <div className="timing-item">
+                          <div className="timing-content">
+                            <div 
+                              className="timing-value"
+                              style={{color: getTimingColor(service.NextBus)}}
+                            >
+                              {formatTime(service.NextBus?.EstimatedArrival) || '-'}
+                            </div>
+                            {service.NextBus?.EstimatedArrival && (
+                              <img 
+                                src={`/${getBusImage(service.NextBus)}.png`} 
+                                alt="bus"
+                                className="timing-bus-icon"
+                              />
+                            )}
+                          </div>
+                          <div className="timing-bar">
+                            <div 
+                              className="timing-bar-fill" 
+                              style={{
+                                width: `${getLoadPercentage(service.NextBus?.Load)}%`,
+                                background: getLoadColor(service.NextBus?.Load)
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="timing-item">
+                          <div className="timing-content">
+                            <div 
+                              className="timing-value"
+                              style={{color: getTimingColor(service.NextBus2)}}
+                            >
+                              {formatTime(service.NextBus2?.EstimatedArrival) || '-'}
+                            </div>
+                            {service.NextBus2?.EstimatedArrival && (
+                              <img 
+                                src={`/${getBusImage(service.NextBus2)}.png`} 
+                                alt="bus"
+                                className="timing-bus-icon"
+                              />
+                            )}
+                          </div>
+                          <div className="timing-bar">
+                            <div 
+                              className="timing-bar-fill" 
+                              style={{
+                                width: `${getLoadPercentage(service.NextBus2?.Load)}%`,
+                                background: getLoadColor(service.NextBus2?.Load)
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="timing-item">
+                          <div className="timing-content">
+                            <div 
+                              className="timing-value"
+                              style={{color: getTimingColor(service.NextBus3)}}
+                            >
+                              {formatTime(service.NextBus3?.EstimatedArrival) || '-'}
+                            </div>
+                            {service.NextBus3?.EstimatedArrival && (
+                              <img 
+                                src={`/${getBusImage(service.NextBus3)}.png`} 
+                                alt="bus"
+                                className="timing-bus-icon"
+                              />
+                            )}
+                          </div>
+                          <div className="timing-bar">
+                            <div 
+                              className="timing-bar-fill" 
+                              style={{
+                                width: `${getLoadPercentage(service.NextBus3?.Load)}%`,
+                                background: getLoadColor(service.NextBus3?.Load)
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-data">No bus services available at this stop</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showOverlay && searchResult && (
+        <div className="search-overlay">
+          <div className="overlay-header">
+            <button className="back-button" onClick={closeOverlay}>
+              ← Back
+            </button>
+            <button className="star-button" onClick={saveBusStop}>
+              ⭐ Save
+            </button>
+          </div>
+          
+          <div className="overlay-content">
+            {error && <div className="error">{error}</div>}
+            
+            <div className="overlay-bus-stop-info">
+              <span className="busstop-name">
+                {searchResult.data.BusStopName || 'Bus Stop'}
+              </span>
+              <span className="bus-stop-code">{searchResult.code}</span>
+            </div>
+            
+            {searchResult.data.Services && searchResult.data.Services.length > 0 ? (
+              <div className="bus-list">
+                {[...searchResult.data.Services].sort((a, b) => {
+                  const numA = parseInt(a.ServiceNo);
+                  const numB = parseInt(b.ServiceNo);
+                  return numA - numB;
+                }).map((service, index) => (
+                  <div key={index} className="bus-card">
+                    <div className="bus-left">
+                      <div className="bus-number">{service.ServiceNo}</div>
+                    </div>
+                    
+                    <div className="bus-right">
+                      <div className="timing-row">
+                        <div className="timing-item">
+                          <div className="timing-content">
+                            <div 
+                              className="timing-value"
+                              style={{color: getTimingColor(service.NextBus)}}
+                            >
+                              {formatTime(service.NextBus?.EstimatedArrival) || '-'}
+                            </div>
+                            {service.NextBus?.EstimatedArrival && (
+                              <img 
+                                src={`/${getBusImage(service.NextBus)}.png`} 
+                                alt="bus"
+                                className="timing-bus-icon"
+                              />
+                            )}
+                          </div>
+                          <div className="timing-bar">
+                            <div 
+                              className="timing-bar-fill" 
+                              style={{
+                                width: `${getLoadPercentage(service.NextBus?.Load)}%`,
+                                background: getLoadColor(service.NextBus?.Load)
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="timing-item">
+                          <div className="timing-content">
+                            <div 
+                              className="timing-value"
+                              style={{color: getTimingColor(service.NextBus2)}}
+                            >
+                              {formatTime(service.NextBus2?.EstimatedArrival) || '-'}
+                            </div>
+                            {service.NextBus2?.EstimatedArrival && (
+                              <img 
+                                src={`/${getBusImage(service.NextBus2)}.png`} 
+                                alt="bus"
+                                className="timing-bus-icon"
+                              />
+                            )}
+                          </div>
+                          <div className="timing-bar">
+                            <div 
+                              className="timing-bar-fill" 
+                              style={{
+                                width: `${getLoadPercentage(service.NextBus2?.Load)}%`,
+                                background: getLoadColor(service.NextBus2?.Load)
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="timing-item">
+                          <div className="timing-content">
+                            <div 
+                              className="timing-value"
+                              style={{color: getTimingColor(service.NextBus3)}}
+                            >
+                              {formatTime(service.NextBus3?.EstimatedArrival) || '-'}
+                            </div>
+                            {service.NextBus3?.EstimatedArrival && (
+                              <img 
+                                src={`/${getBusImage(service.NextBus3)}.png`} 
+                                alt="bus"
+                                className="timing-bus-icon"
+                              />
+                            )}
+                          </div>
+                          <div className="timing-bar">
+                            <div 
+                              className="timing-bar-fill" 
+                              style={{
+                                width: `${getLoadPercentage(service.NextBus3?.Load)}%`,
+                                background: getLoadColor(service.NextBus3?.Load)
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-data">No bus services available at this stop</div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="container">
-
         <div className="search-section">
           <input
             id="busStop"
@@ -269,161 +504,51 @@ function App() {
           </button>
         </div>
 
-        {error && <div className="error">{error}</div>}
+        {!showOverlay && error && <div className="error">{error}</div>}
 
         {busStops.length > 0 && (
-          <div className="results">
-            <div className="accordion-list">
+          <div className="saved-stops">
+            <h2 className="saved-stops-title">Saved Bus Stops</h2>
+            <div className="bus-stops-list">
               {busStops.map((busStop) => (
-                <div key={busStop.code} className="accordion-item">
-                  <div 
-                    className="accordion-header" 
-                    onClick={() => toggleAccordion(busStop.code)}
-                  >
-                    <div className="accordion-title">
-                      {editMode ? (
-                        <div className="edit-name-container">
-                          <input
-                            type="text"
-                            className="edit-name-input"
-                            value={busStop.customName !== null && busStop.customName !== undefined 
-                              ? busStop.customName 
-                              : (busStop.originalName || busStop.data.BusStopName || '')}
-                            onChange={(e) => updateBusStopName(busStop.code, e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            placeholder="Bus stop name"
-                          />
-                        </div>
-                      ) : (
+                <div 
+                  key={busStop.code} 
+                  className="bus-stop-item-compact"
+                  onClick={() => !editMode && openBusStopDetails(busStop)}
+                  style={{cursor: editMode ? 'default' : 'pointer'}}
+                >
+                  <div className="bus-stop-compact-content">
+                    {editMode ? (
+                      <div className="edit-name-container">
+                        <input
+                          type="text"
+                          className="edit-name-input"
+                          value={busStop.customName !== null && busStop.customName !== undefined 
+                            ? busStop.customName 
+                            : (busStop.originalName || busStop.data.BusStopName || '')}
+                          onChange={(e) => updateBusStopName(busStop.code, e.target.value)}
+                          placeholder="Bus stop name"
+                        />
+                      </div>
+                    ) : (
+                      <div className="bus-stop-title">
                         <span className="busstop-name">
                           {busStop.customName || busStop.originalName || busStop.data.BusStopName || 'Bus Stop'}
                         </span>
-                      )}
-                      <span className="bus-stop-code">{busStop.code}</span>
-                    </div>
-                    <div className="accordion-actions">
-                      {editMode && (
-                        <button 
-                          className="remove-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeBusStop(busStop.code);
-                          }}
-                        >
-                          ✕
-                        </button>
-                      )}
-                      <span className={`accordion-icon ${expandedStops[busStop.code] ? 'expanded' : ''}`}>
-                        ▼
-                      </span>
-                    </div>
+                        <span className="bus-stop-code">{busStop.code}</span>
+                      </div>
+                    )}
                   </div>
-                  
-                  {expandedStops[busStop.code] && (
-                    <div className="accordion-content">
-                      {busStop.data.Services && busStop.data.Services.length > 0 ? (
-                        <div className="bus-list">
-                          {[...busStop.data.Services].sort((a, b) => {
-                            const numA = parseInt(a.ServiceNo);
-                            const numB = parseInt(b.ServiceNo);
-                            return numA - numB;
-                          }).map((service, index) => (
-                            <div key={index} className="bus-card">
-                              <div className="bus-left">
-                                <div className="bus-number">{service.ServiceNo}</div>
-                              </div>
-                              
-                              <div className="bus-right">
-                                <div className="timing-row">
-                                  <div className="timing-item">
-                                    <div className="timing-content">
-                                      <div 
-                                        className="timing-value"
-                                        style={{color: getTimingColor(service.NextBus)}}
-                                      >
-                                        {formatTime(service.NextBus?.EstimatedArrival) || '-'}
-                                      </div>
-                                      {service.NextBus?.EstimatedArrival && (
-                                        <img 
-                                          src={`/${getBusImage(service.NextBus)}.png`} 
-                                          alt="bus"
-                                          className="timing-bus-icon"
-                                        />
-                                      )}
-                                    </div>
-                                    <div className="timing-bar">
-                                      <div 
-                                        className="timing-bar-fill" 
-                                        style={{
-                                          width: `${getLoadPercentage(service.NextBus?.Load)}%`,
-                                          background: getLoadColor(service.NextBus?.Load)
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="timing-item">
-                                    <div className="timing-content">
-                                      <div 
-                                        className="timing-value"
-                                        style={{color: getTimingColor(service.NextBus2)}}
-                                      >
-                                        {formatTime(service.NextBus2?.EstimatedArrival) || '-'}
-                                      </div>
-                                      {service.NextBus2?.EstimatedArrival && (
-                                        <img 
-                                          src={`/${getBusImage(service.NextBus2)}.png`} 
-                                          alt="bus"
-                                          className="timing-bus-icon"
-                                        />
-                                      )}
-                                    </div>
-                                    <div className="timing-bar">
-                                      <div 
-                                        className="timing-bar-fill" 
-                                        style={{
-                                          width: `${getLoadPercentage(service.NextBus2?.Load)}%`,
-                                          background: getLoadColor(service.NextBus2?.Load)
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="timing-item">
-                                    <div className="timing-content">
-                                      <div 
-                                        className="timing-value"
-                                        style={{color: getTimingColor(service.NextBus3)}}
-                                      >
-                                        {formatTime(service.NextBus3?.EstimatedArrival) || '-'}
-                                      </div>
-                                      {service.NextBus3?.EstimatedArrival && (
-                                        <img 
-                                          src={`/${getBusImage(service.NextBus3)}.png`} 
-                                          alt="bus"
-                                          className="timing-bus-icon"
-                                        />
-                                      )}
-                                    </div>
-                                    <div className="timing-bar">
-                                      <div 
-                                        className="timing-bar-fill" 
-                                        style={{
-                                          width: `${getLoadPercentage(service.NextBus3?.Load)}%`,
-                                          background: getLoadColor(service.NextBus3?.Load)
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="no-data">No bus services available at this stop</div>
-                      )}
-                    </div>
+                  {editMode && (
+                    <button 
+                      className="remove-button"
+                      onClick={() => removeBusStop(busStop.code)}
+                    >
+                      ✕
+                    </button>
+                  )}
+                  {!editMode && (
+                    <span className="arrow-icon">→</span>
                   )}
                 </div>
               ))}
