@@ -376,7 +376,6 @@ body {
   color: #999;
   font-size: 1.3rem;
   cursor: pointer;
-  padding: 0.5rem;
   transition: all 0.2s;
   flex-shrink: 0;
   margin-left: 0.5rem;
@@ -400,15 +399,17 @@ body {
 }
 
 .bus-number {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   color: #fff;
   line-height: 1;
+  font-weight: 500;
 }
 
 .bus-destination {
   font-size: 0.65rem;
   color: #8c8c8c;
   font-weight: 500;
+  word-wrap: break-word;
 }
 
 .bus-destination-input {
@@ -681,6 +682,7 @@ body {
 
 .combined-items-section {
   margin-top: 1rem;
+  margin-bottom: 5.5rem;
 }
 
 .combined-items-list {
