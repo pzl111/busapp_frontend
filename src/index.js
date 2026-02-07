@@ -28,9 +28,10 @@ window.addEventListener('message', (event) => {
   if (event.data === 'android-back-button') {
     const btn = document.querySelector('.back-button');
     if (btn) {
+      alert('Back button pressed');
       btn.click();
     } else {
-      console.log('No back-button found');
+      alert('No back-button found');
     }
   }
 });
