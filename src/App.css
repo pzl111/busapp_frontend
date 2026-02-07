@@ -648,40 +648,27 @@ body {
   color: #fff;
 }
 
-/* Reorder Buttons Styles */
-.reorder-buttons {
-  display: flex;
-  flex-direction: row;
-  gap: 0.25rem;
-  margin-right: 0.5rem;
-  flex-shrink: 0;
-}
-
-.reorder-button {
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
-  color: #999;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  cursor: pointer;
+/* Drag Handle Styles */
+.drag-handle {
+  font-size: 1.5rem;
+  color: #666;
+  cursor: grab;
+  padding-right: 0.5rem;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
 }
 
-.reorder-button:hover:not(:disabled) {
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.dragging {
+  opacity: 1;
   background: #3a3a3a;
-  color: #fff;
   border-color: #4a4a4a;
-}
-
-.reorder-button:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
 }
 
 .combined-items-section {

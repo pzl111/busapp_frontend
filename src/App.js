@@ -46,6 +46,10 @@ function App() {
     }
     return [];
   });
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [touchStart, setTouchStart] = useState(null);
+  const [currentTouch, setCurrentTouch] = useState(null);
+  const [lastHoveredItem, setLastHoveredItem] = useState(null);
 
   const fetchBusArrival = async () => {
     if (!apiKey) {
@@ -183,22 +187,89 @@ function App() {
     ));
   };
 
-  const moveItemUp = (itemId) => {
-    const index = itemsOrder.indexOf(itemId);
-    if (index <= 0) return; // Already at the top
-    
-    const newOrder = [...itemsOrder];
-    [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
-    setItemsOrder(newOrder);
+  const handleDragStart = (e, itemId) => {
+    setDraggedItem(itemId);
+    setLastHoveredItem(itemId);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
-  const moveItemDown = (itemId) => {
-    const index = itemsOrder.indexOf(itemId);
-    if (index === -1 || index >= itemsOrder.length - 1) return; // Already at the bottom
+  const handleDragOver = (e, targetItemId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    if (!draggedItem || draggedItem === targetItemId || lastHoveredItem === targetItemId) {
+      return;
+    }
+    
+    const draggedIndex = itemsOrder.indexOf(draggedItem);
+    const targetIndex = itemsOrder.indexOf(targetItemId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      return;
+    }
     
     const newOrder = [...itemsOrder];
-    [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+    newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, draggedItem);
+    
     setItemsOrder(newOrder);
+    setLastHoveredItem(targetItemId);
+  };
+
+  const handleDrop = (e, targetItemId) => {
+    e.preventDefault();
+    setDraggedItem(null);
+    setLastHoveredItem(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setLastHoveredItem(null);
+  };
+
+  const handleTouchStart = (e, itemId) => {
+    setDraggedItem(itemId);
+    setLastHoveredItem(itemId);
+    setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+    setCurrentTouch({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+
+  const handleTouchMove = (e) => {
+    if (!draggedItem) return;
+    e.preventDefault();
+    
+    const touchPoint = e.touches[0];
+    setCurrentTouch({ x: touchPoint.clientX, y: touchPoint.clientY });
+    
+    const element = document.elementFromPoint(touchPoint.clientX, touchPoint.clientY);
+    if (element) {
+      const card = element.closest('[data-item-id]');
+      if (card) {
+        const targetItemId = card.getAttribute('data-item-id');
+        
+        if (targetItemId && targetItemId !== draggedItem && targetItemId !== lastHoveredItem) {
+          const draggedIndex = itemsOrder.indexOf(draggedItem);
+          const targetIndex = itemsOrder.indexOf(targetItemId);
+          
+          if (draggedIndex !== -1 && targetIndex !== -1) {
+            const newOrder = [...itemsOrder];
+            newOrder.splice(draggedIndex, 1);
+            newOrder.splice(targetIndex, 0, draggedItem);
+            setItemsOrder(newOrder);
+            setLastHoveredItem(targetItemId);
+          }
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!draggedItem) return;
+    
+    setDraggedItem(null);
+    setLastHoveredItem(null);
+    setTouchStart(null);
+    setCurrentTouch(null);
   };
 
   const toggleEditMode = () => {
@@ -717,24 +788,22 @@ function App() {
                   return (
                     <div
                       key={itemId}
-                      className="bus-card favorite-bus-card"
+                      data-item-id={itemId}
+                      className={`bus-card favorite-bus-card ${draggedItem === itemId ? 'dragging' : ''}`}
+                      onDragOver={(e) => handleDragOver(e, itemId)}
+                      onDrop={(e) => handleDrop(e, itemId)}
                     >
                       {editMode && (
-                        <div className="reorder-buttons">
-                          <button 
-                            className="reorder-button"
-                            onClick={() => moveItemUp(itemId)}
-                            disabled={index === 0}
-                          >
-                            ▲
-                          </button>
-                          <button 
-                            className="reorder-button"
-                            onClick={() => moveItemDown(itemId)}
-                            disabled={index === itemsOrder.length - 1}
-                          >
-                            ▼
-                          </button>
+                        <div 
+                          className="drag-handle"
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, itemId)}
+                          onDragEnd={handleDragEnd}
+                          onTouchStart={(e) => handleTouchStart(e, itemId)}
+                          onTouchMove={(e) => handleTouchMove(e)}
+                          onTouchEnd={(e) => handleTouchEnd(e)}
+                        >
+                          ⋮⋮
                         </div>
                       )}
                       {editMode ? (
@@ -866,26 +935,24 @@ function App() {
                   return (
                     <div
                       key={itemId}
-                      className="bus-stop-item-compact"
+                      data-item-id={itemId}
+                      className={`bus-stop-item-compact ${draggedItem === itemId ? 'dragging' : ''}`}
                       onClick={() => !editMode && openBusStopDetails(busStop)}
                       style={{cursor: editMode ? 'default' : 'pointer'}}
+                      onDragOver={(e) => handleDragOver(e, itemId)}
+                      onDrop={(e) => handleDrop(e, itemId)}
                     >
                       {editMode && (
-                        <div className="reorder-buttons">
-                          <button 
-                            className="reorder-button"
-                            onClick={(e) => { e.stopPropagation(); moveItemUp(itemId); }}
-                            disabled={index === 0}
-                          >
-                            ▲
-                          </button>
-                          <button 
-                            className="reorder-button"
-                            onClick={(e) => { e.stopPropagation(); moveItemDown(itemId); }}
-                            disabled={index === itemsOrder.length - 1}
-                          >
-                            ▼
-                          </button>
+                        <div 
+                          className="drag-handle"
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, itemId)}
+                          onDragEnd={handleDragEnd}
+                          onTouchStart={(e) => handleTouchStart(e, itemId)}
+                          onTouchMove={(e) => handleTouchMove(e)}
+                          onTouchEnd={(e) => handleTouchEnd(e)}
+                        >
+                          ⋮⋮
                         </div>
                       )}
                       <div className="bus-stop-compact-content">
