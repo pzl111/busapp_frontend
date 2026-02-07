@@ -23,13 +23,15 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Handle Android back button in WebView
-window.addEventListener('message', function(event) {
+// Listen for messages from React Native
+window.addEventListener('message', (event) => {
   if (event.data === 'android-back-button') {
-    // Trigger your back button logic
     const btn = document.querySelector('.back-button');
     if (btn) {
       btn.click();
+    } else {
+      console.log('No back-button found');
     }
   }
 });
+
