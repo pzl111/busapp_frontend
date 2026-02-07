@@ -404,7 +404,7 @@ function App() {
         <div className="search-overlay">
           <div className="overlay-header">
             <button className="back-button" onClick={closeBusStopDetails}>
-              ←
+              ◀
             </button>
             <div className="overlay-bus-stop-info">
               <span className="busstop-name">
@@ -919,7 +919,7 @@ function App() {
                         </button>
                       )}
                       {!editMode && (
-                        <span className="arrow-icon">→</span>
+                        <span className="arrow-icon">▶</span>
                       )}
                     </div>
                   );

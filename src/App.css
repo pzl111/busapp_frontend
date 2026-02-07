@@ -150,7 +150,7 @@ body {
 }
 
 .back-button {
-  background: #2a2a2a;
+  background: transparent;
   color: #fff;
   border: none;
   padding: 0.3rem 0.8rem;
@@ -165,9 +165,9 @@ body {
   flex-shrink: 0;
 }
 
-.back-button:hover {
+/* .back-button:hover {
   background: #3a3a3a;
-}
+} */
 
 .save-stop-button {
   background: transparent;
@@ -181,6 +181,7 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-top: -5px;
 }
 
 .save-stop-button:hover {
@@ -302,7 +303,7 @@ body {
 
 .arrow-icon {
   color: #999;
-  font-size: 1.2rem;
+  font-size: 1rem;
   flex-shrink: 0;
   margin-left: 1rem;
 }
@@ -379,6 +380,7 @@ body {
   transition: all 0.2s;
   flex-shrink: 0;
   margin-left: 0.5rem;
+  margin-top: -5px;
 }
 
 .favorite-bus-button:hover {
@@ -478,7 +480,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  align-items: stretch;
+  align-items: center;
   flex: 1;
   min-width: 0;
 }
@@ -518,7 +520,7 @@ body {
 }
 
 .timing-bus-icon {
-  width: 14px;
+  width: 12px;
 }
 
 .bus-icons {
