@@ -321,8 +321,8 @@ body {
 }
 
 .busstop-name {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.2rem;
+  font-weight: 500;
   color: #fff;
 }
 
@@ -357,7 +357,7 @@ body {
 .bus-card {
   background: #1a1a1a;
   border-radius: 16px;
-  padding: 0.9rem 1rem;
+  padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -399,7 +399,7 @@ body {
 }
 
 .bus-number {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   color: #fff;
   line-height: 1;
   font-weight: 500;
