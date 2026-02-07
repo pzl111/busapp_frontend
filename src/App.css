@@ -140,7 +140,7 @@ body {
   position: sticky;
   top: 0;
   background: #000;
-  padding: 0.3rem 1rem;
+  padding: 0.5rem 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -325,6 +325,7 @@ body {
   font-size: 1.1rem;
   font-weight: 500;
   color: #fff;
+  overflow-wrap: anywhere;
 }
 
 .remove-button {
@@ -505,7 +506,7 @@ body {
 }
 
 .timing-bar {
-  width: 100%;
+  width: 85%;
   height: 3px;
   background: #2a2a2a;
   border-radius: 2px;
@@ -520,7 +521,8 @@ body {
 }
 
 .timing-bus-icon {
-  width: 12px;
+  width: 14px;
+  margin-bottom: 2px;
 }
 
 .bus-icons {
