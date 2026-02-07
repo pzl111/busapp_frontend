@@ -300,16 +300,10 @@ function App() {
     
     if (busStopCodes.size === 0) return;
     
-    setLoading(true);
-    
-    try {
-      // Refresh all bus stops in parallel
-      await Promise.all(
-        Array.from(busStopCodes).map(code => refreshBusStop(code))
-      );
-    } finally {
-      setLoading(false);
-    }
+    // Refresh all bus stops in parallel
+    await Promise.all(
+      Array.from(busStopCodes).map(code => refreshBusStop(code))
+    );
   };
 
   useEffect(() => {
