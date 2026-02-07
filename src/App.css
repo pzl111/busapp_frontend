@@ -281,7 +281,7 @@ body {
 }
 
 .bus-stop-item-compact {
-  background: #101010;
+  background: #161616;
   border-radius: 12px;
   /* border: 1px solid #2a2a2a; */
   padding: 0.8rem 1rem;
@@ -353,11 +353,11 @@ body {
 .bus-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.55rem;
 }
 
 .bus-card {
-  background: #101010;
+  background: #161616;
   border-radius: 16px;
   padding: 1rem;
   display: flex;
@@ -692,7 +692,7 @@ body {
 .combined-items-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.55rem;
 }
 
 /* Loading Overlay */
