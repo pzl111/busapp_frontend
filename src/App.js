@@ -300,10 +300,16 @@ function App() {
     
     if (busStopCodes.size === 0) return;
     
-    // Refresh all bus stops in parallel
-    await Promise.all(
-      Array.from(busStopCodes).map(code => refreshBusStop(code))
-    );
+    setLoading(true);
+    
+    try {
+      // Refresh all bus stops in parallel
+      await Promise.all(
+        Array.from(busStopCodes).map(code => refreshBusStop(code))
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -713,7 +719,7 @@ function App() {
             onKeyPress={(e) => e.key === 'Enter' && fetchBusArrival()}
           />
           <button className="search-icon-button" onClick={fetchBusArrival} disabled={loading || !apiKey}>
-            {loading ? '⏳' : '🔍'}
+            <img src="/search.png" alt="search" className="search-icon" />
           </button>
         </div>
 
@@ -750,12 +756,12 @@ function App() {
                           ⋮⋮
                         </div>
                       )}
-                      <div className="bus-left">
-                        <div className="bus-number">{favorite.serviceNo}</div>
-                        {editMode ? (
+                      {editMode ? (
+                        <>
+                          <div className="bus-number-edit">{favorite.serviceNo}</div>
                           <input
                             type="text"
-                            className="bus-destination-input"
+                            className="bus-destination-input-edit"
                             value={favorite.customName !== null && favorite.customName !== undefined 
                               ? favorite.customName 
                               : favorite.busStopName || favorite.busStopCode}
@@ -763,14 +769,17 @@ function App() {
                             placeholder="Bus stop name"
                             onClick={(e) => e.stopPropagation()}
                           />
-                        ) : (
+                        </>
+                      ) : (
+                        <div className="bus-left">
+                          <div className="bus-number">{favorite.serviceNo}</div>
                           <div className="bus-destination">
                             {favorite.customName || favorite.busStopName || favorite.busStopCode}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                       
-                      {favorite.data && (
+                      {!editMode && favorite.data && (
                         <div className="bus-right">
                           <div className="timing-row">
                             <div className="timing-item">
@@ -938,10 +947,16 @@ function App() {
             className="floating-edit-button"
             onClick={toggleEditMode}
           >
-            {editMode ? '✓' : '✏️'}
+            {editMode ? <img src="/tick.png" alt="tick" className="tick-icon" /> : <img src="/edit.png" alt="edit" className="edit-icon" />}
           </button>
         )}
       </div>
+
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+        </div>
+      )}
     </div>
   );
 }

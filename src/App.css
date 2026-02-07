@@ -105,6 +105,11 @@ body {
   cursor: not-allowed;
 }
 
+.search-icon {
+  width: 18px;
+  height: 16px;
+}
+
 .error {
   background: #2a1a1a;
   color: #ff6b6b;
@@ -423,6 +428,30 @@ body {
   border-color: #4a4a4a;
 }
 
+.bus-number-edit {
+  font-size: 1.4rem;
+  color: #fff;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-right: 0.5rem;
+}
+
+.bus-destination-input-edit {
+  flex: 1;
+  font-size: 1rem;
+  color: #fff;
+  font-weight: 500;
+  background: #0a0a0a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.bus-destination-input-edit:focus {
+  outline: none;
+  border-color: #4a4a4a;
+}
+
 .bus-right {
   display: flex;
   align-items: center;
@@ -471,7 +500,7 @@ body {
 }
 
 .timing-bar {
-  width: 100%;
+  width: 85%;
   height: 3px;
   background: #2a2a2a;
   border-radius: 2px;
@@ -557,6 +586,16 @@ body {
   transform: scale(0.95);
 }
 
+.edit-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.tick-icon {
+  width: 26px;
+  height: 20px;
+}
+
 .edit-name-container {
   display: flex;
   align-items: center;
@@ -606,7 +645,7 @@ body {
   font-size: 1.5rem;
   color: #666;
   cursor: grab;
-  padding: 0 0.5rem;
+  padding-right: 0.5rem;
   display: flex;
   align-items: center;
   user-select: none;
@@ -639,4 +678,33 @@ body {
 .bus-card[draggable="true"]:active,
 .bus-stop-item-compact[draggable="true"]:active {
   cursor: grabbing;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
