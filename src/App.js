@@ -152,6 +152,14 @@ function App() {
   };
 
   useEffect(() => {
+    // Refresh all bus stops on initial page load/refresh
+    if (busStops.length > 0 && apiKey) {
+      refreshAllBusStops();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
+
+  useEffect(() => {
     // Set up interval to refresh all bus stops every 25 seconds
     if (busStops.length === 0) return;
 
