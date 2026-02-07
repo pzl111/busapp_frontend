@@ -34,6 +34,19 @@ function App() {
     }
     return [];
   });
+  const [itemsOrder, setItemsOrder] = useState(() => {
+    // Load items order from localStorage on initial render
+    try {
+      const savedOrder = localStorage.getItem('itemsOrder');
+      if (savedOrder) {
+        return JSON.parse(savedOrder);
+      }
+    } catch (error) {
+      console.error('Error loading items order from localStorage:', error);
+    }
+    return [];
+  });
+  const [draggedItem, setDraggedItem] = useState(null);
 
   const fetchBusArrival = async () => {
     if (!apiKey) {
@@ -171,6 +184,44 @@ function App() {
     ));
   };
 
+  const handleDragStart = (e, itemId) => {
+    setDraggedItem(itemId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetItemId) => {
+    e.preventDefault();
+    
+    if (!draggedItem || draggedItem === targetItemId) {
+      setDraggedItem(null);
+      return;
+    }
+    
+    const draggedIndex = itemsOrder.indexOf(draggedItem);
+    const targetIndex = itemsOrder.indexOf(targetItemId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedItem(null);
+      return;
+    }
+    
+    const newOrder = [...itemsOrder];
+    newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, draggedItem);
+    
+    setItemsOrder(newOrder);
+    setDraggedItem(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+  };
+
   const toggleEditMode = () => {
     // If exiting edit mode, reset empty names to null (default)
     if (editMode) {
@@ -291,6 +342,33 @@ function App() {
       console.error('Error saving favorite buses to localStorage:', error);
     }
   }, [favoriteBuses]);
+
+  // Save items order to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('itemsOrder', JSON.stringify(itemsOrder));
+    } catch (error) {
+      console.error('Error saving items order to localStorage:', error);
+    }
+  }, [itemsOrder]);
+
+  // Sync itemsOrder when busStops or favoriteBuses change
+  useEffect(() => {
+    const allItemIds = [
+      ...busStops.map(stop => `busStop-${stop.code}`),
+      ...favoriteBuses.map(fav => `favoriteBus-${fav.busStopCode}-${fav.serviceNo}`)
+    ];
+    
+    // Remove items that no longer exist
+    const filteredOrder = itemsOrder.filter(item => allItemIds.includes(item));
+    
+    // Add new items that aren't in the order yet
+    const newItems = allItemIds.filter(id => !filteredOrder.includes(id));
+    
+    if (newItems.length > 0 || filteredOrder.length !== itemsOrder.length) {
+      setItemsOrder([...filteredOrder, ...newItems]);
+    }
+  }, [busStops, favoriteBuses]);
 
   const formatTime = (timeString) => {
     if (!timeString) return null;
@@ -641,34 +719,59 @@ function App() {
 
         {!showOverlay && error && <div className="error">{error}</div>}
 
-        {favoriteBuses.length > 0 && (
-          <div className="favorite-buses-section">
-            <h2 className="saved-stops-title">Favorite Buses</h2>
-            <div className="bus-list">
-              {favoriteBuses.map((favorite, index) => (
-                <div key={`${favorite.busStopCode}-${favorite.serviceNo}`} className="bus-card favorite-bus-card">
-                  <div className="bus-left">
-                    <div className="bus-number">{favorite.serviceNo}</div>
-                    {editMode ? (
-                      <input
-                        type="text"
-                        className="bus-destination-input"
-                        value={favorite.customName !== null && favorite.customName !== undefined 
-                          ? favorite.customName 
-                          : favorite.busStopName || favorite.busStopCode}
-                        onChange={(e) => updateFavoriteBusName(favorite.busStopCode, favorite.serviceNo, e.target.value)}
-                        placeholder="Bus stop name"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      <div className="bus-destination">
-                        {favorite.customName || favorite.busStopName || favorite.busStopCode}
-                      </div>
-                    )}
-                  </div>
+        {(busStops.length > 0 || favoriteBuses.length > 0) && (
+          <div className="combined-items-section">
+            {/* <h2 className="saved-stops-title">My Buses & Stops</h2> */}
+            <div className="combined-items-list">
+              {itemsOrder.map((itemId) => {
+                const [type, ...idParts] = itemId.split('-');
+                
+                if (type === 'favoriteBus') {
+                  const busStopCode = idParts[0];
+                  const serviceNo = idParts.slice(1).join('-');
+                  const favorite = favoriteBuses.find(
+                    fav => fav.busStopCode === busStopCode && fav.serviceNo === serviceNo
+                  );
                   
-                  {favorite.data && (
-                    <div className="bus-right">
+                  if (!favorite) return null;
+                  
+                  return (
+                    <div
+                      key={itemId}
+                      className={`bus-card favorite-bus-card ${draggedItem === itemId ? 'dragging' : ''}`}
+                      draggable={editMode}
+                      onDragStart={(e) => handleDragStart(e, itemId)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, itemId)}
+                      onDragEnd={handleDragEnd}
+                    >
+                      {editMode && (
+                        <div className="drag-handle">
+                          ⋮⋮
+                        </div>
+                      )}
+                      <div className="bus-left">
+                        <div className="bus-number">{favorite.serviceNo}</div>
+                        {editMode ? (
+                          <input
+                            type="text"
+                            className="bus-destination-input"
+                            value={favorite.customName !== null && favorite.customName !== undefined 
+                              ? favorite.customName 
+                              : favorite.busStopName || favorite.busStopCode}
+                            onChange={(e) => updateFavoriteBusName(favorite.busStopCode, favorite.serviceNo, e.target.value)}
+                            placeholder="Bus stop name"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <div className="bus-destination">
+                            {favorite.customName || favorite.busStopName || favorite.busStopCode}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {favorite.data && (
+                        <div className="bus-right">
                           <div className="timing-row">
                             <div className="timing-item">
                               <div className="timing-content">
@@ -754,66 +857,78 @@ function App() {
                         </div>
                       )}
                   
-                  {editMode && (
-                    <button 
-                      className="remove-button"
-                      onClick={() => removeFavoriteBus(favorite.busStopCode, favorite.serviceNo)}
+                      {editMode && (
+                        <button 
+                          className="remove-button"
+                          onClick={() => removeFavoriteBus(favorite.busStopCode, favorite.serviceNo)}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  );
+                } else if (type === 'busStop') {
+                  const busStopCode = idParts.join('-');
+                  const busStop = busStops.find(stop => stop.code === busStopCode);
+                  
+                  if (!busStop) return null;
+                  
+                  return (
+                    <div
+                      key={itemId}
+                      className={`bus-stop-item-compact ${draggedItem === itemId ? 'dragging' : ''}`}
+                      onClick={() => !editMode && openBusStopDetails(busStop)}
+                      style={{cursor: editMode ? 'default' : 'pointer'}}
+                      draggable={editMode}
+                      onDragStart={(e) => handleDragStart(e, itemId)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, itemId)}
+                      onDragEnd={handleDragEnd}
                     >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {busStops.length > 0 && (
-          <div className="saved-stops">
-            <h2 className="saved-stops-title">Saved Bus Stops</h2>
-            <div className="bus-stops-list">
-              {busStops.map((busStop) => (
-                <div 
-                  key={busStop.code} 
-                  className="bus-stop-item-compact"
-                  onClick={() => !editMode && openBusStopDetails(busStop)}
-                  style={{cursor: editMode ? 'default' : 'pointer'}}
-                >
-                  <div className="bus-stop-compact-content">
-                    {editMode ? (
-                      <div className="edit-name-container">
-                        <input
-                          type="text"
-                          className="edit-name-input"
-                          value={busStop.customName !== null && busStop.customName !== undefined 
-                            ? busStop.customName 
-                            : (busStop.originalName || busStop.data.BusStopName || '')}
-                          onChange={(e) => updateBusStopName(busStop.code, e.target.value)}
-                          placeholder="Bus stop name"
-                        />
+                      {editMode && (
+                        <div className="drag-handle">
+                          ⋮⋮
+                        </div>
+                      )}
+                      <div className="bus-stop-compact-content">
+                        {editMode ? (
+                          <div className="edit-name-container">
+                            <input
+                              type="text"
+                              className="edit-name-input"
+                              value={busStop.customName !== null && busStop.customName !== undefined 
+                                ? busStop.customName 
+                                : (busStop.originalName || busStop.data.BusStopName || '')}
+                              onChange={(e) => updateBusStopName(busStop.code, e.target.value)}
+                              placeholder="Bus stop name"
+                            />
+                          </div>
+                        ) : (
+                          <div className="bus-stop-title">
+                            <span className="busstop-name">
+                              {busStop.customName || busStop.originalName || busStop.data.BusStopName || 'Bus Stop'}
+                            </span>
+                            <span className="bus-stop-code">{busStop.code}</span>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="bus-stop-title">
-                        <span className="busstop-name">
-                          {busStop.customName || busStop.originalName || busStop.data.BusStopName || 'Bus Stop'}
-                        </span>
-                        <span className="bus-stop-code">{busStop.code}</span>
-                      </div>
-                    )}
-                  </div>
-                  {editMode && (
-                    <button 
-                      className="remove-button"
-                      onClick={() => removeBusStop(busStop.code)}
-                    >
-                      ✕
-                    </button>
-                  )}
-                  {!editMode && (
-                    <span className="arrow-icon">→</span>
-                  )}
-                </div>
-              ))}
+                      {editMode && (
+                        <button 
+                          className="remove-button"
+                          onClick={() => removeBusStop(busStop.code)}
+                        >
+                          ✕
+                        </button>
+                      )}
+                      {!editMode && (
+                        <span className="arrow-icon">→</span>
+                      )}
+                    </div>
+                  );
+                }
+                
+                return null;
+              })}
             </div>
           </div>
         )}
