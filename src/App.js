@@ -347,7 +347,7 @@ function App() {
         <div className="search-overlay">
           <div className="overlay-header">
             <button className="back-button" onClick={closeBusStopDetails}>
-              ← Back
+              ←
             </button>
             <div className="overlay-bus-stop-info">
               <span className="busstop-name">
@@ -487,7 +487,7 @@ function App() {
         <div className="search-overlay">
           <div className="overlay-header">
             <button className="back-button" onClick={closeOverlay}>
-              ← Back
+              ←
             </button>
             <div className="overlay-bus-stop-info">
               <span className="busstop-name">

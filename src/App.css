@@ -149,7 +149,7 @@ body {
   background: #2a2a2a;
   color: #fff;
   border: none;
-  padding: 0.6rem 1.2rem;
+  padding: 0.3rem 0.8rem;
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 500;
@@ -353,9 +353,8 @@ body {
 .bus-card {
   background: #1a1a1a;
   border-radius: 16px;
-  padding: 0rem 1rem;
+  padding: 0.8rem 1rem;
   display: flex;
-  height: 3.7rem;
   justify-content: space-between;
   align-items: center;
   border: 1px solid #2a2a2a;
@@ -466,7 +465,7 @@ body {
 }
 
 .timing-value {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: #fff;
   text-align: right;
   line-height: 1;
@@ -488,7 +487,7 @@ body {
 }
 
 .timing-bus-icon {
-  width: 16px;
+  width: 14px;
 }
 
 .bus-icons {
