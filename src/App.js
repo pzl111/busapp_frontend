@@ -46,7 +46,6 @@ function App() {
     }
     return [];
   });
-  const [draggedItem, setDraggedItem] = useState(null);
 
   const fetchBusArrival = async () => {
     if (!apiKey) {
@@ -184,42 +183,22 @@ function App() {
     ));
   };
 
-  const handleDragStart = (e, itemId) => {
-    setDraggedItem(itemId);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (e, targetItemId) => {
-    e.preventDefault();
-    
-    if (!draggedItem || draggedItem === targetItemId) {
-      setDraggedItem(null);
-      return;
-    }
-    
-    const draggedIndex = itemsOrder.indexOf(draggedItem);
-    const targetIndex = itemsOrder.indexOf(targetItemId);
-    
-    if (draggedIndex === -1 || targetIndex === -1) {
-      setDraggedItem(null);
-      return;
-    }
+  const moveItemUp = (itemId) => {
+    const index = itemsOrder.indexOf(itemId);
+    if (index <= 0) return; // Already at the top
     
     const newOrder = [...itemsOrder];
-    newOrder.splice(draggedIndex, 1);
-    newOrder.splice(targetIndex, 0, draggedItem);
-    
+    [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
     setItemsOrder(newOrder);
-    setDraggedItem(null);
   };
 
-  const handleDragEnd = () => {
-    setDraggedItem(null);
+  const moveItemDown = (itemId) => {
+    const index = itemsOrder.indexOf(itemId);
+    if (index === -1 || index >= itemsOrder.length - 1) return; // Already at the bottom
+    
+    const newOrder = [...itemsOrder];
+    [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+    setItemsOrder(newOrder);
   };
 
   const toggleEditMode = () => {
@@ -723,7 +702,7 @@ function App() {
           <div className="combined-items-section">
             {/* <h2 className="saved-stops-title">My Buses & Stops</h2> */}
             <div className="combined-items-list">
-              {itemsOrder.map((itemId) => {
+              {itemsOrder.map((itemId, index) => {
                 const [type, ...idParts] = itemId.split('-');
                 
                 if (type === 'favoriteBus') {
@@ -738,16 +717,24 @@ function App() {
                   return (
                     <div
                       key={itemId}
-                      className={`bus-card favorite-bus-card ${draggedItem === itemId ? 'dragging' : ''}`}
-                      draggable={editMode}
-                      onDragStart={(e) => handleDragStart(e, itemId)}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, itemId)}
-                      onDragEnd={handleDragEnd}
+                      className="bus-card favorite-bus-card"
                     >
                       {editMode && (
-                        <div className="drag-handle">
-                          ⋮⋮
+                        <div className="reorder-buttons">
+                          <button 
+                            className="reorder-button"
+                            onClick={() => moveItemUp(itemId)}
+                            disabled={index === 0}
+                          >
+                            ▲
+                          </button>
+                          <button 
+                            className="reorder-button"
+                            onClick={() => moveItemDown(itemId)}
+                            disabled={index === itemsOrder.length - 1}
+                          >
+                            ▼
+                          </button>
                         </div>
                       )}
                       {editMode ? (
@@ -879,18 +866,26 @@ function App() {
                   return (
                     <div
                       key={itemId}
-                      className={`bus-stop-item-compact ${draggedItem === itemId ? 'dragging' : ''}`}
+                      className="bus-stop-item-compact"
                       onClick={() => !editMode && openBusStopDetails(busStop)}
                       style={{cursor: editMode ? 'default' : 'pointer'}}
-                      draggable={editMode}
-                      onDragStart={(e) => handleDragStart(e, itemId)}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, itemId)}
-                      onDragEnd={handleDragEnd}
                     >
                       {editMode && (
-                        <div className="drag-handle">
-                          ⋮⋮
+                        <div className="reorder-buttons">
+                          <button 
+                            className="reorder-button"
+                            onClick={(e) => { e.stopPropagation(); moveItemUp(itemId); }}
+                            disabled={index === 0}
+                          >
+                            ▲
+                          </button>
+                          <button 
+                            className="reorder-button"
+                            onClick={(e) => { e.stopPropagation(); moveItemDown(itemId); }}
+                            disabled={index === itemsOrder.length - 1}
+                          >
+                            ▼
+                          </button>
                         </div>
                       )}
                       <div className="bus-stop-compact-content">

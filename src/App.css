@@ -640,24 +640,39 @@ body {
   color: #fff;
 }
 
-/* Drag and Drop Styles */
-.drag-handle {
-  font-size: 1.5rem;
-  color: #666;
-  cursor: grab;
-  padding-right: 0.5rem;
+/* Reorder Buttons Styles */
+.reorder-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 0.25rem;
+  margin-right: 0.5rem;
+}
+
+.reorder-button {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #999;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  user-select: none;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  padding: 0;
 }
 
-.drag-handle:active {
-  cursor: grabbing;
+.reorder-button:hover:not(:disabled) {
+  background: #3a3a3a;
+  color: #fff;
+  border-color: #4a4a4a;
 }
 
-.dragging {
-  opacity: 0.5;
-  background: #2a2a2a;
+.reorder-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .combined-items-section {
@@ -668,16 +683,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
-
-.bus-card[draggable="true"],
-.bus-stop-item-compact[draggable="true"] {
-  cursor: grab;
-}
-
-.bus-card[draggable="true"]:active,
-.bus-stop-item-compact[draggable="true"]:active {
-  cursor: grabbing;
 }
 
 /* Loading Overlay */
