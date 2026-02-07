@@ -23,16 +23,3 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Listen for messages from React Native
-window.addEventListener('message', (event) => {
-  if (event.data === 'android-back-button') {
-    const btn = document.querySelector('.back-button');
-    if (btn) {
-      alert('Back button pressed');
-      btn.click();
-    } else {
-      alert('No back-button found');
-    }
-  }
-});
-
