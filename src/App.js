@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 function App() {
@@ -50,6 +50,7 @@ function App() {
   const [touchStart, setTouchStart] = useState(null);
   const [currentTouch, setCurrentTouch] = useState(null);
   const [lastHoveredItem, setLastHoveredItem] = useState(null);
+  const isInitialLoad = useRef(true);
 
   const fetchBusArrival = async () => {
     if (!apiKey) {
@@ -341,7 +342,7 @@ function App() {
     }
   };
 
-  const refreshAllBusStops = async () => {
+  const refreshAllBusStops = async (showLoading = false) => {
     // Get unique bus stop codes from both saved stops and favorite buses
     const busStopCodes = new Set([
       ...busStops.map(stop => stop.code),
@@ -350,27 +351,39 @@ function App() {
     
     if (busStopCodes.size === 0) return;
     
-    // Refresh all bus stops in parallel
-    await Promise.all(
-      Array.from(busStopCodes).map(code => refreshBusStop(code))
-    );
+    // Show loading screen only if requested (initial load)
+    if (showLoading) {
+      setLoading(true);
+    }
+    
+    try {
+      // Refresh all bus stops in parallel
+      await Promise.all(
+        Array.from(busStopCodes).map(code => refreshBusStop(code))
+      );
+    } finally {
+      if (showLoading) {
+        setLoading(false);
+      }
+    }
   };
 
   useEffect(() => {
     // Refresh all bus stops on initial page load/refresh
     if ((busStops.length > 0 || favoriteBuses.length > 0) && apiKey) {
-      refreshAllBusStops();
+      refreshAllBusStops(isInitialLoad.current);
+      isInitialLoad.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
 
   useEffect(() => {
-    // Set up interval to refresh all bus stops every 25 seconds
+    // Set up interval to refresh all bus stops every 20 seconds
     if (busStops.length === 0 && favoriteBuses.length === 0) return;
 
     const intervalId = setInterval(() => {
       refreshAllBusStops();
-    }, 25000);
+    }, 20000);
 
     return () => clearInterval(intervalId);
   }, [busStops.length, favoriteBuses.length, apiKey]);
