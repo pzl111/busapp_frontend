@@ -357,10 +357,69 @@ function App() {
     }
     
     try {
-      // Refresh all bus stops in parallel
-      await Promise.all(
-        Array.from(busStopCodes).map(code => refreshBusStop(code))
+      // Use batch endpoint for better performance
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/api/bus-arrival-batch`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            busStopCodes: Array.from(busStopCodes),
+            apiKey: apiKey
+          })
+        }
       );
+
+      if (!response.ok) {
+        console.error('Failed to refresh bus stops in batch');
+        return;
+      }
+
+      const { results } = await response.json();
+      
+      // Process all results
+      results.forEach(result => {
+        if (result.success && result.data) {
+          const stopCode = result.busStopCode;
+          const data = result.data;
+          
+          // Update bus stops
+          setBusStops(prev => prev.map(stop => 
+            stop.code === stopCode 
+              ? { ...stop, data: data, timestamp: new Date() }
+              : stop
+          ));
+
+          // Update favorite buses from this stop
+          setFavoriteBuses(prev => prev.map(fav => {
+            if (fav.busStopCode === stopCode) {
+              const service = data.Services?.find(s => s.ServiceNo === fav.serviceNo);
+              return {
+                ...fav,
+                data: service || null,
+                busStopName: data.BusStopName || fav.busStopName,
+                timestamp: new Date()
+              };
+            }
+            return fav;
+          }));
+
+          // Update selected bus stop if viewing
+          if (selectedBusStop?.code === stopCode) {
+            setSelectedBusStop(prev => ({
+              ...prev,
+              data: data,
+              timestamp: new Date()
+            }));
+          }
+        } else if (result.error) {
+          console.error(`Error fetching ${result.busStopCode}:`, result.error);
+        }
+      });
+    } catch (err) {
+      console.error('Error refreshing bus stops:', err);
     } finally {
       if (showLoading) {
         setLoading(false);
